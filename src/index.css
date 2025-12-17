@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: transition for dark mode */
+html {
+  transition: background-color 0.3s, color 0.3s;
+  overflow: hidden;              /* Prevent scroll on html */
+}
+
+body {
+  overflow: hidden !important;   /* Force no scroll */
+  -ms-overflow-style: none;      /* IE & Edge */
+  scrollbar-width: none;         /* Firefox */
+  @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+}
+
+/* Hide scrollbar in WebKit browsers (Chrome, Safari) */
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Global Input Styles for Dark Mode Contrast */
+@layer base {
+  input, textarea, select {
+    @apply bg-white text-gray-900 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors duration-200;
+  }
+  
+  /* Ensure placeholder text is visible but distinct */
+  input::placeholder, textarea::placeholder {
+    @apply text-gray-400 dark:text-gray-500;
+  }
+}
+
+/* Custom Scrollbar for internal containers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-600;
+}
