@@ -129,28 +129,28 @@ export const ApiService = {
   },
 
   // Logs
-  getLogs: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/logs`);
-      if (!response.ok) throw new Error('Failed to fetch logs');
-      return await response.json();
-    } catch (error) {
-      console.warn('API Error (getLogs): Using mock data', error);
-      return MOCK_LOGS;
-    }
-  },
+// Logs
+getLogs: async () => {
+  const response = await fetch('http://localhost:3001/api/logs');
 
-  // User Profile
-  getUserProfile: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/profile`);
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      return await response.json();
-    } catch (error) {
-      console.warn('API Error (getUserProfile): Using mock data', error);
-      return MOCK_PROFILE;
-    }
-  },
+  if (!response.ok) {
+    throw new Error('Failed to fetch logs');
+  }
+
+  return await response.json();
+},
+
+// User Profile
+getUserProfile: async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/profile`);
+    if (!response.ok) throw new Error('Failed to fetch profile');
+    return await response.json();
+  } catch (error) {
+    console.warn('API Error (getUserProfile): Using mock data', error);
+    return MOCK_PROFILE;
+  }
+},
 
   updateUserProfile: async (data) => {
     try {

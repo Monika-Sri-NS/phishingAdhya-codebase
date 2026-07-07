@@ -1,26 +1,64 @@
-// Mock Detection Logic
-// In a real system, this would use ML models, heuristic analysis, and threat intelligence feeds.
-
 const classifyUrl = (url) => {
-  const lowerUrl = url.toLowerCase();
-  
-  // Simulate detection based on keywords
-  if (lowerUrl.includes('bank') || lowerUrl.includes('login') || lowerUrl.includes('secure') || lowerUrl.includes('account')) {
-    // Random chance to be phishing for demo purposes if it looks sensitive
-    return Math.random() > 0.3 ? 'Phishing' : 'Suspicious';
-  }
-  
-  if (lowerUrl.includes('malware') || lowerUrl.includes('virus') || lowerUrl.includes('trojan')) {
-    return 'Phishing';
-  }
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.toLowerCase();
 
-  if (lowerUrl.includes('google') || lowerUrl.includes('microsoft') || lowerUrl.includes('apple')) {
-     // Typosquatting simulation (very basic)
-     return 'Safe'; 
-  }
+    // ✅ TRUSTED DOMAINS (STRICT CHECK)
+    const trustedSites = [
+      'google.com',
+      'www.google.com',
+      'github.com',
+      'www.github.com',
+      'microsoft.com',
+      'apple.com',
+      'amazon.com',
+      'facebook.com'
+    ];
 
-  // Default to Safe or Suspicious randomly
-  return Math.random() > 0.8 ? 'Suspicious' : 'Safe';
+    if (trustedSites.includes(hostname)) {
+      return 'Safe';
+    }
+
+    // 🚨 STRONG PHISHING KEYWORDS
+    const phishingKeywords = [
+      'bank-login',
+      'verify-account',
+      'secure-update',
+      'free-money',
+      'crypto-giveaway',
+      'update-password'
+    ];
+
+    if (phishingKeywords.some(k => url.includes(k))) {
+      return 'Phishing';
+    }
+
+    // ⚠ SUSPICIOUS KEYWORDS
+    const suspiciousKeywords = [
+      'login',
+      'secure',
+      'account',
+      'update'
+    ];
+
+    if (suspiciousKeywords.some(k => url.includes(k))) {
+      return 'Suspicious';
+    }
+
+    // 🚨 MALWARE
+    if (
+      url.includes('malware') ||
+      url.includes('virus') ||
+      url.includes('trojan')
+    ) {
+      return 'Phishing';
+    }
+
+    return 'Safe';
+
+  } catch (err) {
+    return 'Safe';
+  }
 };
 
 module.exports = { classifyUrl };

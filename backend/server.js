@@ -16,7 +16,6 @@ app.use(morgan('dev'));
 
 // 0. Health Check
 app.get('/api/health', (req, res) => {
-  // Simple check to see if DB is accessible
   const dbStatus = db.getState() ? 'connected' : 'disconnected';
   res.json({ status: 'ok', database: dbStatus });
 });
@@ -27,32 +26,38 @@ app.get('/api/threats', (req, res) => {
   res.json(threats);
 });
 
-// 2. Check a URL (Used by Extension)
+// 2. Check URL (FIXED)
 app.post('/api/check-url', (req, res) => {
   const { url } = req.body;
-  if (!url) return res.status(400).json({ error: 'URL is required' });
 
-  // Check if already in DB
-  const existing = db.get('threats').find({ url }).value();
-  if (existing) {
-    return res.json({ status: existing.status, severity: existing.severity });
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required' });
   }
 
-  // If not, classify it
   const status = classifyUrl(url);
-  const severity = status === 'Phishing' ? 'High' : (status === 'Suspicious' ? 'Medium' : 'Low');
+  const severity =
+    status === 'Phishing'
+      ? 'High'
+      : status === 'Suspicious'
+      ? 'Medium'
+      : 'Low';
 
-  // Save to DB if not safe
-  if (status !== 'Safe') {
-    const newThreat = {
+  const existing = db.get('threats').find({ url }).value();
+
+  if (existing) {
+    db.get('threats')
+      .find({ url })
+      .assign({ status, severity })
+      .write();
+  } else if (status !== 'Safe') {
+    db.get('threats').push({
       id: Date.now(),
       url,
       status,
       detectedAt: new Date().toISOString(),
       severity,
       target: 'Unknown'
-    };
-    db.get('threats').push(newThreat).write();
+    }).write();
   }
 
   res.json({ status, severity });
@@ -62,16 +67,14 @@ app.post('/api/check-url', (req, res) => {
 app.post('/api/takedown', (req, res) => {
   const { threatId } = req.body;
   const threat = db.get('threats').find({ id: threatId }).value();
-  
+
   if (!threat) return res.status(404).json({ error: 'Threat not found' });
 
-  // Update status
   db.get('threats')
     .find({ id: threatId })
     .assign({ status: 'Takedown Requested' })
     .write();
 
-  // Log takedown
   db.get('takedowns').push({
     id: Date.now(),
     threatId,
@@ -106,12 +109,8 @@ app.post('/api/certifications', (req, res) => {
   res.json(newCert);
 });
 
-// 6. Alerts (New Endpoint)
+// 6. Alerts
 app.get('/api/alerts', (req, res) => {
-  // In a real app, this would fetch from a dedicated alerts table
-  // For now, we can generate alerts based on threats or return a static list
-  // Let's return a mix of static alerts and high-severity threats
-  
   const highSeverityThreats = db.get('threats')
     .filter(t => t.severity === 'High' || t.severity === 'Critical')
     .value()
@@ -125,7 +124,14 @@ app.get('/api/alerts', (req, res) => {
     }));
 
   const systemAlerts = [
-    { id: 999, message: 'System scan completed successfully', severity: 'Low', timestamp: new Date().toISOString(), status: 'Resolved', source: 'System' }
+    {
+      id: 999,
+      message: 'System scan completed successfully',
+      severity: 'Low',
+      timestamp: new Date().toISOString(),
+      status: 'Resolved',
+      source: 'System'
+    }
   ];
 
   res.json([...highSeverityThreats, ...systemAlerts]);
@@ -133,22 +139,26 @@ app.get('/api/alerts', (req, res) => {
 
 // 7. Logs
 app.get('/api/logs', (req, res) => {
-    // Mock logs for now
-    const logs = [
-        { id: 1, timestamp: new Date().toISOString(), level: 'INFO', message: 'Server started', source: 'System' },
-        { id: 2, timestamp: new Date().toISOString(), level: 'INFO', message: 'Database connected', source: 'Database' }
-    ];
-    res.json(logs);
+  const threats = db.get('threats').value();
+
+  const logs = threats.map(t => ({
+    id: t.id,
+    timestamp: t.detectedAt,
+    level: t.severity,
+    message: `${t.status} detected for ${t.url}`,
+    source: 'Detector'
+  }));
+
+  res.json(logs);
 });
 
 // 8. Reports
 app.get('/api/reports', (req, res) => {
-    // Mock reports
-    const reports = [
-        { id: 101, title: 'Weekly Phishing Summary', date: '2023-10-25', type: 'PDF', size: '2.4 MB' },
-        { id: 102, title: 'Incident Report #4492', date: '2023-10-24', type: 'CSV', size: '156 KB' }
-    ];
-    res.json(reports);
+  const reports = [
+    { id: 101, title: 'Weekly Phishing Summary', date: '2023-10-25', type: 'PDF', size: '2.4 MB' },
+    { id: 102, title: 'Incident Report #4492', date: '2023-10-24', type: 'CSV', size: '156 KB' }
+  ];
+  res.json(reports);
 });
 
 app.listen(PORT, () => {
